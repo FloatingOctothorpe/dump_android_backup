@@ -153,11 +153,15 @@ def extract_backup(backup_file, output, password):
 
         with open(output, 'wb') as output_file:
 
-            # TODO: avoid reading entire payload into memory
             if header['encryption'] == 'AES-256':
                 decrypter = pyaes.Decrypter(pyaes.AESModeOfOperationCBC(header['master_key'],
                                                                         header['master_iv']))
-                data = decrypter.feed(backup.read()) + decrypter.feed()
+                data = b''
+                chunk = backup.read(1000000)
+                while chunk:
+                    data += decrypter.feed(chunk)
+                    chunk = backup.read(1000000)
+                data = data + decrypter.feed()
             else:
                 data = backup.read()
             output_file.write(zlib.decompress(data))
